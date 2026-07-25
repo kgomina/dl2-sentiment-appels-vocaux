@@ -1,0 +1,17 @@
+[
+  {
+    "audio_path": "examples/positif_1.wav",
+    "reference_transcription": "je suis très satisfait du service merci beaucoup",
+    "reference_sentiment": "positif"
+  },
+  {
+    "audio_path": "examples/negatif_1.wav",
+    "reference_transcription": "c'est inadmissible ma commande est en retard",
+    "reference_sentiment": "negatif"
+  },
+  {
+    "audio_path": "examples/neutre_1.wav",
+    "reference_transcription": "Le produit correspond à la description, sans plus",
+    "reference_sentiment": "neutre"
+  }
+]
