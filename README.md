@@ -1,3 +1,14 @@
+---
+title: Sentiment Appels Vocaux
+emoji: 🎙️
+colorFrom: blue
+colorTo: green
+sdk: gradio
+sdk_version: 4.26.0
+app_file: app.py
+pinned: false
+license: mit
+---
 # 🎙️ Détection Automatique de Sentiment dans des Appels Vocaux
 
 Pipeline complet **Audio → Transcription (ASR) → Analyse de Sentiment (NLP)**
