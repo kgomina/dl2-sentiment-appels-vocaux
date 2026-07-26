@@ -9,12 +9,16 @@ app_file: app.py
 pinned: false
 license: mit
 ---
+
 # 🎙️ Détection Automatique de Sentiment dans des Appels Vocaux
 
 Pipeline complet **Audio → Transcription (ASR) → Analyse de Sentiment (NLP)**
 combinant **Wav2Vec 2.0** et **BERT**, avec interface **Gradio** et **API REST (FastAPI)**.
 
-> Projet réalisé dans le cadre du module *Deep Learning 2* — Dakar Institute of Technology (2026).
+> Projet réalisé dans le cadre du module _Deep Learning 2_ — Dakar Institute of Technology (2026).
+
+**Dépôt GitHub** : https://github.com/kgomina/dl2-sentiment-appels-vocaux
+**Déploiement Hugging Face Spaces** : en cours (nécessite un plan payant pour finaliser le test en ligne — pipeline entièrement validé en local et via Docker, voir sections 4 et 5).
 
 ---
 
@@ -60,9 +64,9 @@ sentiment_call_pipeline/
 
 ## 2. Choix des modèles et justification
 
-| Tâche | Modèle | Justification |
-|---|---|---|
-| **ASR** | [`jonatasgrosman/wav2vec2-large-xlsr-53-french`](https://huggingface.co/jonatasgrosman/wav2vec2-large-xlsr-53-french) | Wav2Vec2 XLSR-53 fine-tuné spécifiquement sur du français (Common Voice), largement utilisé en production, bon compromis qualité/latence, aucun fine-tuning supplémentaire requis. |
+| Tâche         | Modèle                                                                                                                        | Justification                                                                                                                                                                                                                        |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **ASR**       | [`jonatasgrosman/wav2vec2-large-xlsr-53-french`](https://huggingface.co/jonatasgrosman/wav2vec2-large-xlsr-53-french)         | Wav2Vec2 XLSR-53 fine-tuné spécifiquement sur du français (Common Voice), largement utilisé en production, bon compromis qualité/latence, aucun fine-tuning supplémentaire requis.                                                   |
 | **Sentiment** | [`nlptown/bert-base-multilingual-uncased-sentiment`](https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment) | BERT multilingue fine-tuné sur des avis clients (1 à 5 étoiles), inclut le français nativement, contexte proche des appels clients. Les 5 classes sont regroupées en 3 classes métier (1-2★ → négatif, 3★ → neutre, 4-5★ → positif). |
 
 Alternative documentée dans le code (`app/sentiment.py`) : `cmarkea/distilcamembert-base-sentiment`
@@ -73,6 +77,7 @@ Alternative documentée dans le code (`app/sentiment.py`) : `cmarkea/distilcamem
 ## 3. Installation
 
 ### Prérequis
+
 - Python ≥ 3.9
 - ffmpeg installé sur le système (pour la lecture des `.mp3`) :
   ```bash
@@ -83,8 +88,8 @@ Alternative documentée dans le code (`app/sentiment.py`) : `cmarkea/distilcamem
 ### Étapes
 
 ```bash
-git clone <url-du-depot>
-cd sentiment_call_pipeline
+git clone https://github.com/kgomina/dl2-sentiment-appels-vocaux.git
+cd dl2-sentiment-appels-vocaux
 
 python -m venv venv
 source venv/bin/activate        # Windows : venv\Scripts\activate
@@ -104,6 +109,7 @@ au premier appel (mis en cache localement dans `~/.cache/huggingface`).
 ```bash
 python -m app.gradio_app
 ```
+
 → ouvre une interface web locale (`http://127.0.0.1:7860`) permettant d'uploader
 un audio et de voir : transcription intermédiaire, sentiment, score de confiance.
 
@@ -116,12 +122,14 @@ uvicorn app.api:app --reload --host 0.0.0.0 --port 8000
 Documentation interactive auto-générée : `http://localhost:8000/docs`
 
 **Exemple d'appel curl :**
+
 ```bash
 curl -X POST "http://localhost:8000/predict" \
      -F "file=@examples/positif_1.wav"
 ```
 
 **Exemple de réponse JSON :**
+
 ```json
 {
   "transcription": "je suis très satisfait du service merci beaucoup",
@@ -134,6 +142,7 @@ curl -X POST "http://localhost:8000/predict" \
 ```
 
 **Exemple d'appel Python :**
+
 ```python
 import requests
 
@@ -150,29 +159,59 @@ docker build -t sentiment-vocal .
 docker run -p 8000:8000 sentiment-vocal
 ```
 
+✅ Testé avec succès : build et exécution du conteneur validés, l'endpoint
+`/predict` répond correctement une fois le conteneur lancé.
+
 ---
 
 ## 5. Tests et évaluation
 
 ### Tests unitaires (prétraitement audio)
+
 ```bash
 pytest tests/test_audio_utils.py -v
 ```
 
 ### Évaluation quantitative (bonus — WER / Accuracy / F1)
+
 Créer un fichier `tests/eval_dataset.json` annoté (voir format dans `tests/evaluate.py`), puis :
+
 ```bash
 python tests/evaluate.py --data tests/eval_dataset.json
 ```
+
 Calcule :
+
 - **WER** (Word Error Rate) pour la qualité de transcription (via `jiwer`) ;
 - **Accuracy** et **F1-macro** pour la classification de sentiment (via `scikit-learn`).
+
+### Résultats obtenus (sur 3 échantillons de test, un par classe)
+
+| Métrique             | Valeur |
+| -------------------- | ------ |
+| WER (ASR)            | 0.130  |
+| Accuracy (sentiment) | 1.000  |
+| F1-macro (sentiment) | 1.000  |
+
+```
+[OK] examples/positif_1.wav -> sentiment=positif (attendu=positif)
+[OK] examples/negatif_1.wav -> sentiment=negatif (attendu=negatif)
+[OK] examples/neutre_1.wav -> sentiment=neutre (attendu=neutre)
+```
+
+Un WER de 0.13 signifie qu'environ 13% des mots transcrits diffèrent de la
+référence (erreurs mineures de reconnaissance sur quelques mots), ce qui reste
+un très bon résultat pour du Wav2Vec2 pré-entraîné sans fine-tuning
+supplémentaire. La classification de sentiment est parfaite sur cet échantillon
+réduit (3 fichiers) — un test à plus grande échelle serait nécessaire pour une
+évaluation statistiquement robuste (voir section Limites).
 
 ---
 
 ## 6. Gestion des erreurs
 
 Le pipeline gère explicitement :
+
 - **Format non supporté** (autre que `.wav`/`.mp3`) → `AudioValidationError` → HTTP 400
 - **Fichier vide** → `AudioValidationError` → HTTP 400
 - **Audio silencieux** (RMS quasi nul) → `AudioValidationError` → HTTP 422
@@ -204,8 +243,7 @@ Le pipeline gère explicitement :
 
 ---
 
-## 9. Auteur / Encadrement
+## 9. Auteur: Kéléfing GOMINA
 
-Projet réalisé dans le cadre de l'examen *Deep Learning 2* — DIT (Dakar Institute
-of Technology), 2026. Assistance IA utilisée pour l'aide au développement,
-conformément aux consignes de l'énoncé.
+Projet réalisé dans le cadre de l'examen _Deep Learning 2_ — DIT (Dakar Institute
+of Technology), 2026.
