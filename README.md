@@ -56,6 +56,7 @@ sentiment_call_pipeline/
 │   └── evaluate.py             # Évaluation quantitative (WER, Accuracy, F1)
 ├── examples/                    # 3 fichiers audio de démo (1 par classe)
 ├── requirements.txt
+├── app.py
 ├── Dockerfile
 └── README.md
 ```
