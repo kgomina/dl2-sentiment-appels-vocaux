@@ -13,53 +13,49 @@ license: mit
 # 🎙️ Détection Automatique de Sentiment dans des Appels Vocaux
 
 Pipeline complet **Audio → Transcription (ASR) → Analyse de Sentiment (NLP)**
-combinant **Wav2Vec 2.0** et **BERT**, avec interface **Gradio** et **API REST (FastAPI)**.
+combinant **Wav2Vec 2.0** et **BERT**, avec interface **Gradio**, interface **Streamlit** et **API REST (FastAPI)**.
 
 > Projet réalisé dans le cadre du module _Deep Learning 2_ — Dakar Institute of Technology (2026).
 
 **Dépôt GitHub** : https://github.com/kgomina/dl2-sentiment-appels-vocaux
-**Déploiement Hugging Face Spaces** : en cours (nécessite un plan payant pour finaliser le test en ligne — pipeline entièrement validé en local et via Docker, voir sections 4 et 5).
+**Démo en ligne (Streamlit Cloud)** : https://dl2-sentiment-appels-vocaux-4ajbjvgtrsxdgpbrgceuq8.streamlit.app/
+**Déploiement Hugging Face Spaces** : code poussé, test en ligne en attente d'un plan payant (voir démo Streamlit ci-dessus comme alternative fonctionnelle).
 
 ---
 
 ## 1. Architecture
-
-```
 Audio (.wav/.mp3)
-      │
-      ▼
+│
+▼
 Prétraitement (mono, 16kHz, normalisation amplitude)
-      │
-      ▼
+│
+▼
 ASR — Wav2Vec 2.0 (jonatasgrosman/wav2vec2-large-xlsr-53-french)
-      │  (texte transcrit)
-      ▼
+│ (texte transcrit)
+▼
 Sentiment — BERT (nlptown/bert-base-multilingual-uncased-sentiment)
-      │
-      ▼
+│
+▼
 Sortie : { transcription, sentiment (positif/négatif/neutre), confiance }
-```
 
 ### Structure du dépôt
-
-```
 sentiment_call_pipeline/
 ├── app/
-│   ├── audio_utils.py   # Chargement + prétraitement audio
-│   ├── asr.py            # Modèle Wav2Vec2 (transcription)
-│   ├── sentiment.py       # Modèle BERT (sentiment)
-│   ├── pipeline.py         # Orchestration complète + gestion d'erreurs
-│   ├── api.py               # API FastAPI (endpoint POST /predict)
-│   └── gradio_app.py         # Interface Gradio
+│ ├── audio_utils.py # Chargement + prétraitement audio
+│ ├── asr.py # Modèle Wav2Vec2 (transcription)
+│ ├── sentiment.py # Modèle BERT (sentiment)
+│ ├── pipeline.py # Orchestration complète + gestion d'erreurs
+│ ├── api.py # API FastAPI (endpoint POST /predict)
+│ └── gradio_app.py # Interface Gradio
 ├── tests/
-│   ├── test_audio_utils.py    # Tests unitaires (prétraitement)
-│   └── evaluate.py             # Évaluation quantitative (WER, Accuracy, F1)
-├── examples/                    # 3 fichiers audio de démo (1 par classe)
+│ ├── test_audio_utils.py # Tests unitaires (prétraitement)
+│ └── evaluate.py # Évaluation quantitative (WER, Accuracy, F1)
+├── examples/ # 3 fichiers audio de démo (1 par classe)
 ├── requirements.txt
-├── app.py
+├── app.py # Point d'entrée Hugging Face Spaces (Gradio)
+├── streamlit_app.py # Interface Streamlit (design entreprise, déployée)
 ├── Dockerfile
 └── README.md
-```
 
 ---
 
@@ -81,10 +77,10 @@ Alternative documentée dans le code (`app/sentiment.py`) : `cmarkea/distilcamem
 
 - Python ≥ 3.9
 - ffmpeg installé sur le système (pour la lecture des `.mp3`) :
-  ```bash
+```bash
   sudo apt-get install ffmpeg libsndfile1   # Linux
   brew install ffmpeg                        # macOS
-  ```
+```
 
 ### Étapes
 
@@ -163,6 +159,21 @@ docker run -p 8000:8000 sentiment-vocal
 ✅ Testé avec succès : build et exécution du conteneur validés, l'endpoint
 `/predict` répond correctement une fois le conteneur lancé.
 
+### d) Démo en ligne (Streamlit Cloud)
+
+Une interface web complète (design "entreprise" : dashboard, historique de
+session, métriques visuelles) est déployée publiquement et directement
+testable, sans aucune installation :
+
+🔗 **https://dl2-sentiment-appels-vocaux-4ajbjvgtrsxdgpbrgceuq8.streamlit.app/**
+
+Pour la lancer en local :
+```bash
+streamlit run streamlit_app.py
+```
+
+Code source de cette interface : `streamlit_app.py` (à la racine du dépôt).
+
 ---
 
 ## 5. Tests et évaluation
@@ -189,16 +200,14 @@ Calcule :
 ### Résultats obtenus (sur 3 échantillons de test, un par classe)
 
 | Métrique             | Valeur |
-| -------------------- | ------ |
-| WER (ASR)            | 0.130  |
+| --------------------- | ------ |
+| WER (ASR)             | 0.130  |
 | Accuracy (sentiment) | 1.000  |
-| F1-macro (sentiment) | 1.000  |
+| F1-macro (sentiment)  | 1.000  |
 
-```
 [OK] examples/positif_1.wav -> sentiment=positif (attendu=positif)
 [OK] examples/negatif_1.wav -> sentiment=negatif (attendu=negatif)
 [OK] examples/neutre_1.wav -> sentiment=neutre (attendu=neutre)
-```
 
 Un WER de 0.13 signifie qu'environ 13% des mots transcrits diffèrent de la
 référence (erreurs mineures de reconnaissance sur quelques mots), ce qui reste
